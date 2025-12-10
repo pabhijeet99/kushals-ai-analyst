@@ -29,8 +29,7 @@ if 'platform_images_map' not in st.session_state:
     st.session_state.platform_images_map = {}
 
 # Define the logo URL
-# REVERTING TO ORIGINAL SVG: The PNG caused it to disappear. Let's use the SVG 
-# and rely on the increased size below to fix the "half" issue.
+# Using the original SVG but relying on the increased width for full rendering.
 KUSHALS_LOGO_URL = "https://us.kushals.com/cdn/shop/files/Kushals_New_Logo.svg"
 
 # DIVERSE_STYLES for Section 5 (Lifestyle Images)
@@ -76,7 +75,7 @@ def get_image_download_link(img, filename, text):
     href = f'<a href="data:image/jpeg;base64,{img_str}" download="{safe_filename}" style="display:inline-block; padding:0.5rem 1rem; color:white; background-color:#FA5050; border-radius:0.5rem; text-decoration:none;">{text}</a>'
     return href
 
-# --- CUSTOM CSS (The corrected block from previous fix) ---
+# --- CUSTOM CSS (The logo positioning fix) ---
 st.markdown(
     """
     <style>
@@ -127,9 +126,8 @@ st.markdown(
 # --- END CUSTOM CSS ---
 
 # --- MAIN CONTENT HEADER (Kushal's logo at the top left of main content) ---
-# Placing the logo and title directly above all other elements to minimize blank space
+# FIX APPLIED: Increased width to 250 to ensure the full logo renders without being cut off
 st.markdown(
-    # FIX APPLIED HERE: Increased width to 250 to ensure the full logo renders without being cut off
     f'<img src="{KUSHALS_LOGO_URL}" id="kushals-logo-embedded" width="250">',
     unsafe_allow_html=True
 )
@@ -138,25 +136,37 @@ st.title("Kushal's AI Fashion Jewellery Analyst")
 st.subheader("Analyze an image, generate marketing/SEO content, and AI lifestyle images using Gemini")
 # --- END MAIN CONTENT HEADER ---
 
-# Sidebar for API Key Input (Unchanged)
+# --- Corrected Sidebar for API Key Input (Ready for Cloud Deployment) ---
 client = None
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
-    api_key = st.text_input(
-        "Enter your Gemini API Key",
-        type="password",
-        help="Get your key from Google AI Studio"
-    )
+    
+    # 1. Try to load the key securely from Streamlit Cloud secrets
+    try:
+        # The key stored in Streamlit Cloud's secret manager under [secrets] GEMINI_API_KEY
+        api_key = st.secrets["GEMINI_API_KEY"]
+        st.success("API Key loaded securely from Streamlit Cloud.")
+    except (KeyError, AttributeError):
+        # 2. If key not found in cloud secrets, ask user to input it (for local testing)
+        api_key = st.text_input(
+            "Enter your Gemini API Key",
+            type="password",
+            help="Get your key from Google AI Studio"
+        )
+        if api_key:
+            st.info("Using API Key entered in the sidebar.")
+        else:
+            st.warning("Please enter your API Key for full functionality (especially image generation).")
+
 
     if api_key:
         try:
+            # Initialize the client using the key, regardless of source
             client = genai.Client(api_key=api_key)
-            st.success("API Client Initialized!")
         except Exception as e:
             st.error(f"Error initializing client: {e}")
             client = None
-    else:
-        st.warning("Please enter your API Key for full functionality (especially image generation).")
+# --- END CORRECTED SIDEBAR ---
 
 # --- DUMMY ANALYSIS FUNCTION (Unchanged) ---
 def get_dummy_analysis():
